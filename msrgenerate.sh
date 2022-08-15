@@ -15,9 +15,9 @@ for ((i=RANGELOW;i<=RANGEHIGH;i++)) do
     i=$(printf "%#x\n" $i) # Convert to hex
     regresult=`rdmsr ${i} 2> /dev/null` # Filter unadressable MSRs
    if [ -z "$regresult" ]; then
-       :
+       echo \{NULL, false\}, >> ${logFile}
    else # Register is available
-       echo ${regresult}
+       echo \{${regresult}, true\}, >> ${logFile}
    fi
 done
 

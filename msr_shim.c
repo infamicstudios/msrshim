@@ -25,8 +25,10 @@
 #include <stdint.h>	// uint64_t and friends
 #include <inttypes.h>	// PRIx64 and friends
 #include <regex.h>  //regcomp()
+#include <stdbool.h>
 #include "msr_core.h"
 #include "063f_msr_samples.h"
+
 
 // This can be made arbitrarily more complicated.
 enum {
@@ -53,6 +55,16 @@ struct file{
 	{ BATCH_FD,     false, S_IRUSR | S_IWUSR },
 	{ STOCK_FD,     false, S_IRUSR | S_IWUSR },
 	{ SAFE_FD,      false, S_IRUSR | S_IWUSR }
+};
+
+struct msr 
+{
+        uint64_t value;
+        bool     valid;
+};
+
+struct msr a[]={ 
+        #include "msrdat.h"    
 };
 
 // Need pread, pwrite, ioctl, open, close, stat.
