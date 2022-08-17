@@ -10,8 +10,7 @@ read logFile
 
 RANGELOW=0
 RANGEHIGH=8192 # Covers entire range of possible x86 MSRs
-ALLOWEDMSRS="~/msrshim/allowlist.txt"
-
+ALLOWEDMSRS="allowlist.txt"
 
 for ((i=RANGELOW;i<=RANGEHIGH;i++)) do 
     addr=$(printf "%#x\n" $i) # Convert to hex
