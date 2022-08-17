@@ -61,6 +61,7 @@ struct msr
 {
         uint64_t value;
         bool     valid;
+        bool     isAllowed;
 };
 
 // A struct containing saved values of all valid MSR's
@@ -225,13 +226,25 @@ pwrite(int fd, const void *buf, size_t count, off_t offset){
      * v3 Parse the msr allowlist to get the write mask and apply it
      *
      */
+
     if (fd == 2000) {
-        //TODO: Check to see if count >=0 & 0 < offset < MSRDAT size
-        if (MSRDAT[offset].valid) {
+
+        if (offset > sizeof(MSRDAT)/sizeof(MSRDAT[0]) || offset < 0){ 
+            errno = EDOM; // Again sure if this is the best error for this.
+            return -1;
+        } 
+
+        if (count < 0) {
+            errno = EOVERFLOW;
+            return -1;
+        }
+
+        if (MSRDAT[offset].valid && MSRDAT[offset].isAllowed) {
               MSRDAT[offset].value = *buf;
               return sizeof(uint64_t):
         }
         else {
+            errno = EADDRNOTAVAIL;
             return -1;
         }
     }
