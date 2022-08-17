@@ -20,7 +20,6 @@ for ((i=RANGELOW;i<=RANGEHIGH;i++)) do
    else # Register is available
        addr=$(printf "%#010x" $i) # Convert to the format of hex in the allowfile
        # Search for the MSR in the allowfile this can be made arbitrarily more complicated through regex patterns.
-       echo ${addr}
        if grep -Fxq ${addr} ${ALLOWEDMSRS}; then
           echo \{0x${regresult}ULL, true, true\}, >> ${logFile}
        else
