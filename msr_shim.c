@@ -62,6 +62,7 @@ struct msr
         uint64_t value;
         bool     valid;
         bool     isAllowed;
+        uint64_t mask;
 };
 
 // A struct containing saved values of all valid MSR's
@@ -238,9 +239,10 @@ pwrite(int fd, const void *buf, size_t count, off_t offset){
             errno = EOVERFLOW;
             return -1;
         }
-
+        // Verify the MSR is allowed in the allowlist.
         if (MSRDAT[offset].valid && MSRDAT[offset].isAllowed) {
-              MSRDAT[offset].value = *buf;
+              // Apply the allowlist mask and write.
+              MSRDAT[offset].value = MSRDAT[offset].mask & *buf;
               return sizeof(uint64_t):
         }
         else {
