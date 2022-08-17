@@ -28,7 +28,7 @@
 #include <stdbool.h>
 #include "msr_core.h"
 #include "063f_msr_samples.h"
-
+#include <errno.h>
 
 // This can be made arbitrarily more complicated.
 enum {
@@ -63,7 +63,8 @@ struct msr
         bool     valid;
 };
 
-struct msr a[]={ 
+// A struct containing saved values of all valid MSR's
+struct msr MSRDAT[]={ 
         #include "msrdat.h"    
 };
 
@@ -163,10 +164,8 @@ open(const char *pathname, int flags, ... ){
     if (isMSRSafeFile(pathname)) {    
         fprintf( stdout, "BLR: %s:%d Intercepted open() call to MSR Device %s\n",
 		    	__FILE__, __LINE__, pathname );
-	//TODO: Generate a fake file descriptor
+	// TODO: Make the file descriptor CPU dependant
         return 2000;     
-    // I absolutely cannot seem to figure out what this should return
-        //return real_open( pathname, flags, mode );
     }
 
     //Otherwise open normally
@@ -175,20 +174,71 @@ open(const char *pathname, int flags, ... ){
     }
 }
 
-
 int
 close(int fd){
 	return real_close(fd);
 }
 
+
+// 
+// Intercept calls to fake file descriptor 
+//
 ssize_t
 pread(int fd, void *buf, size_t count, off_t offset){
-	return real_pread( fd, buf, count, offset );
+
+    if (fd == 2000){
+        /*
+         * Retrieve the struct msr  of requested MSR from stored MSR's in array MSRDAT
+         * Then get the value of the msr address
+         * if it is invalid return an error otherwise return size of address in bytes (8).
+         */ 
+        // Validate offset
+        if (offset > sizeof(MSRDAT)/sizeof(MSRDAT[0]) || offset < 0){
+            errno = EDOM; // Not sure if this is the right error for this.
+            return -1;
+        }
+        
+        //Validate count
+        if (count < 0) {
+            errno = EOVERFLOW; // Not sure about this one either
+            return -1
+        }
+
+        if (MSRDAT[offset].valid) {
+            *buf = MSRDAT[offset].value;
+            return sizeof(uint64_t);
+        }
+        else {
+            errno = EADDRNOTAVAIL;
+            return -1;
+        }
+    }
+    return real_pread( fd, buf, count, offset );
 }
+
 
 ssize_t
 pwrite(int fd, const void *buf, size_t count, off_t offset){
-	return real_pwrite( fd, buf, count, offset );
+    /*
+     * v1 Write the value to the array if the MSR is valid
+     * v2 Parse the msr allowlist to see if the MSR is writeable 
+     * v3 Parse the msr allowlist to get the write mask and apply it
+     *
+     */
+    if (fd == 2000) {
+        //TODO: Check to see if count >=0 & 0 < offset < MSRDAT size
+        if (MSRDAT[offset].valid) {
+              MSRDAT[offset].value = *buf;
+              return sizeof(uint64_t):
+        }
+        else {
+            return -1;
+        }
+    }
+     // If not calling our MSR's
+     else {
+	    return real_pwrite( fd, buf, count, offset );
+    }
 }
 
 int

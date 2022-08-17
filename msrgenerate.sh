@@ -10,15 +10,23 @@ read logFile
 
 RANGELOW=0
 RANGEHIGH=8192 # Covers entire range of possible x86 MSRs
+ALLOWEDMSRS="~/msrshim/allowlist.txt"
+
 
 for ((i=RANGELOW;i<=RANGEHIGH;i++)) do 
-    i=$(printf "%#x\n" $i) # Convert to hex
-    regresult=`rdmsr ${i} 2> /dev/null` # Filter unadressable MSRs
+    addr=$(printf "%#x\n" $i) # Convert to hex
+    regresult=`rdmsr ${addr} 2> /dev/null` # Filter unadressable MSRs
    if [ -z "$regresult" ]; then
-       echo \{NULL, false\}, >> ${logFile}
+       echo \{NULL, false, false\}, >> ${logFile}
    else # Register is available
-       echo \{${regresult}, true\}, >> ${logFile}
-   fi
+       addr=$(printf "0x%#08x" $i) # Convert to the format of hex in the allowfile
+       # Search for the MSR in the allowfile this can be made arbitrarily more complicated through regex patterns.
+       if grep -Fxq ${addr} ${ALLOWEDMSRS}; then
+          echo \{0x${regresult}ULL, true, true\}, >> ${logFile}
+       else
+          echo \{0x${regresult}ULL, true, false\}, >> ${logFile}
+       fi
+    fi
 done
 
 
